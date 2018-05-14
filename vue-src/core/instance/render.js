@@ -26,7 +26,11 @@ import { bindObjectProps } from './render-helpers/bind-object-props'
 import { renderStatic, markOnce } from './render-helpers/render-static'
 import { resolveSlots, resolveScopedSlots } from './render-helpers/resolve-slots'
 
-/*初始化render*/
+/**
+ * 初始化render
+ * 设置了 _vnode属性、$slots属性、$scopedSlots属性、$createElement方法
+ * @param {*} vm 
+ */
 export function initRender (vm: Component) {
   vm._vnode = null // the root of the child tree
   vm._staticTrees = null
@@ -46,6 +50,10 @@ export function initRender (vm: Component) {
   vm.$createElement = (a, b, c, d) => createElement(vm, a, b, c, d, true)
 }
 
+/**
+ * 向Vue.prototype添加 $nextTick、_render方法跟一系列render相关的方法
+ * @param {*} Vue 
+ */
 export function renderMixin (Vue: Class<Component>) {
   Vue.prototype.$nextTick = function (fn: Function) {
     return nextTick(fn, this)
@@ -82,7 +90,7 @@ export function renderMixin (Vue: Class<Component>) {
     /*渲染*/
     let vnode
     try {
-      /*调用render函数，返回一个VNode节点*/
+      /* 调用render函数，返回一个VNode节点，返回的vnode在update里面进行patch */
       vnode = render.call(vm._renderProxy, vm.$createElement)
     } catch (e) {
       handleError(e, vm, `render function`)

@@ -10,8 +10,11 @@ let uid = 0
  * directives subscribing to it.
  */
 export default class Dep {
+  // 当前需要收集的观察者引用
   static target: ?Watcher;
+  // 依赖对象id
   id: number;
+  // 依赖观察者列表
   subs: Array<Watcher>;
 
   constructor () {
@@ -32,6 +35,7 @@ export default class Dep {
   /*依赖收集，当存在Dep.target的时候添加观察者对象*/
   depend () {
     if (Dep.target) {
+      // 在Watcher实例中判断是否应该将watcher实例添加到dep实例中，避免重复收集依赖
       Dep.target.addDep(this)
     }
   }

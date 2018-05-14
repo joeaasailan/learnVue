@@ -14,6 +14,17 @@ let uid = 0
 
 /*initMixin就做了一件事情，在Vue的原型上增加_init方法，构造Vue实例的时候会调用这个_init方法来初始化Vue实例*/
 export function initMixin (Vue: Class<Component>) {
+  /**
+   * 增加一个_init方法，_init方法做以下几件事：
+   * 1、合并vue实例的options，添加到$options属性
+   * 2、初始化声明周期
+   * 3、初始化事件
+   * 4、初始化render
+   * 5、调用声明周期钩子
+   * 6、初始化props、methods、data、computed与watch
+   * 7、挂载组件
+   * @param {*} options new Vue(options) 传入的options
+   */
   Vue.prototype._init = function (options?: Object) {
     const vm: Component = this
     // a uid
@@ -51,11 +62,11 @@ export function initMixin (Vue: Class<Component>) {
     }
     // expose real self
     vm._self = vm
-    /*初始化生命周期*/
+    /* 初始化生命周期，注册vm实例的父级组件，设置vm实例生命周期相关标志位 */
     initLifecycle(vm)
-    /*初始化事件*/
+    /* 在vm实例中添加_events属性 用来注册保存事件 */
     initEvents(vm)
-    /*初始化render*/
+    /*初始化render 设置了 _vnode属性、$slots属性、$scopedSlots属性、$createElement方法*/
     initRender(vm)
     /*调用beforeCreate钩子函数并且触发beforeCreate钩子事件*/
     callHook(vm, 'beforeCreate')
@@ -75,7 +86,12 @@ export function initMixin (Vue: Class<Component>) {
     }
 
     if (vm.$options.el) {
-      /*挂载组件*/
+      /**
+       * 挂载组件，注意，此时还没有对data对象做依赖收集，因为还没有运行render函数
+       * 在 vue-src\platforms\web\runtime-with-complier.js中，有携带编译器的$mount方法
+       * 在 vue-src\platforms\web\runtime\index.js中，有不携带编译器的$mount方法
+       * 重点查看不携带编译器的$mount方法
+       */
       vm.$mount(vm.$options.el)
     }
   }
@@ -98,6 +114,10 @@ function initInternalComponent (vm: Component, options: InternalComponentOptions
   }
 }
 
+/**
+ * 为什么有Vue.options的存在 
+ * @param {Vue.constructor} Ctor 
+ */
 export function resolveConstructorOptions (Ctor: Class<Component>) {
   let options = Ctor.options
   /*如果存在父类的时候*/

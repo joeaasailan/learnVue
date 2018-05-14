@@ -3,7 +3,10 @@
 import { updateListeners } from '../vdom/helpers/index'
 import { toArray, tip, hyphenate, formatComponentName } from '../util/index'
 
-/*初始化事件*/
+/**
+ * 向vm实例添加_events对象，用来注册保存事件名以及相应的处理函数
+ * @param {*} vm 
+ */
 export function initEvents (vm: Component) {
   /*在vm上创建一个_events对象，用来存放事件。*/
   vm._events = Object.create(null)
@@ -43,11 +46,23 @@ export function updateComponentListeners (
   updateListeners(listeners, oldListeners || {}, add, remove, vm)
 }
 /*Github:https://github.com/answershuto*/
-/*为Vue原型加入操作事件的方法*/
+/**
+ * 为Vue原型加入操作事件的方法，向Vue.prototype 添加$on、$once、$off、$emit等方法
+ * @param {*} Vue 
+ */
 export function eventsMixin (Vue: Class<Component>) {
   const hookRE = /^hook:/
 
-  /*在vm实例上绑定事件方法*/
+  /**
+   * 在vm实例上绑定事件方法，vm实例中的_events 对象 收集了 事件名以及注册的handler函数数组，每一次调用$on实际上就是往相应的
+   * handler函数数组中push一个handler函数
+   * {
+   *    eventname: [handler1, handler2]
+   * }
+   * 可以用'hook:'作为事件名的前缀来注册声明周期监听函数，比如vm.$on('hook:mounted', handler)
+   * @param {*} event 
+   * @param {*} fn 
+   */
   Vue.prototype.$on = function (event: string | Array<string>, fn: Function): Component {
     const vm: Component = this
 
@@ -68,7 +83,7 @@ export function eventsMixin (Vue: Class<Component>) {
     return vm
   }
 
-  /*注册一个只执行一次的事件方法*/
+  /*注册一个只执行一次的事件方法，这个地方为什么event只能是string，而不能是Array<string> */
   Vue.prototype.$once = function (event: string, fn: Function): Component {
     const vm: Component = this
     function on () {
@@ -124,7 +139,7 @@ export function eventsMixin (Vue: Class<Component>) {
     return vm
   }
 
-  /*触发一个事件方法*/
+  /* 向当前实例触发一个事件方法，注意没有向父级组件触发一个事件，可以从$on跟$emit两个方法源码看出 */
   Vue.prototype.$emit = function (event: string): Component {
     const vm: Component = this
     if (process.env.NODE_ENV !== 'production') {
@@ -139,6 +154,7 @@ export function eventsMixin (Vue: Class<Component>) {
         )
       }
     }
+    // _events是vm的事件集合，收集了事件名以及相对应的handler
     let cbs = vm._events[event]
     if (cbs) {
       /*将类数组的对象转换成数组*/

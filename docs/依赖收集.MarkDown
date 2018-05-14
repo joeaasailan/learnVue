@@ -61,6 +61,7 @@ class Watcher () {
 
         /*在这里将观察者本身赋值给全局的target，只有被target标记过的才会进行依赖收集*/
         Dep.target = this;
+
         /*Github:https://github.com/answershuto*/
         /*触发渲染操作进行依赖收集*/
         this.cb.call(this.vm);
@@ -83,6 +84,10 @@ class Vue {
     }
 }
 
+function observe(value, cb) {
+    Object.keys(value).forEach((key) => defineReactive(value, key, value[key] , cb))
+}
+
 function defineReactive (obj, key, val, cb) {
     /*在闭包内存储一个Dep对象*/
     const dep = new Dep();
@@ -92,7 +97,7 @@ function defineReactive (obj, key, val, cb) {
         configurable: true,
         get: ()=>{
             if (Dep.target) {
-                /*Watcher对象存在全局的Dep.target中*/
+                /* Watcher对象存在全局的Dep.target中， 这个地方每被get一次，就add一次，不会有问题吗 */
                 dep.addSub(Dep.target);
             }
         },
@@ -107,3 +112,5 @@ Dep.target = null;
 ```
 
 将观察者Watcher实例赋值给全局的Dep.target，然后触发render操作只有被Dep.target标记过的才会进行依赖收集。有Dep.target的对象会将Watcher的实例push到subs中，在对象被修改出发setter操作的时候dep会调用subs中的Watcher实例的update方法进行渲染。
+
+总结：所谓的依赖收集是指排除render函数（同时也是模板中）没有用到的data数据。使得这些data数据改变时不会重新运行render函数进行渲染。但是以上的简易实现，会导致，一个已经被收集的data数据变化，会运行多次render函数，因为Dep.notify这个方法，是遍历dep内部的依赖的。

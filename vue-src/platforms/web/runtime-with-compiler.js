@@ -76,6 +76,7 @@ Vue.prototype.$mount = function (
         shouldDecodeNewlines,
         delimiters: options.delimiters
       }, this)
+      // 将模板编译产生的render函数放置在vue实例的options上面
       options.render = render
       options.staticRenderFns = staticRenderFns
 

@@ -274,8 +274,11 @@ function normalizeDirectives (options: Object) {
 /**
  * Merge two option objects into a new one.
  * Core utility used in both instantiation and inheritance.
+ * vue实例的所有options在这里被合并，合并的options包括 Vue.options、new Vue(options)
+ * @param parent 从Vue.options中的options
+ * @param child new Vue(options)中的options，就是当前vue实例的options
+ * @param vm 当前vue实例
  */
- /*合并两个option对象到一个新的对象中*/
 export function mergeOptions (
   parent: Object,
   child: Object,

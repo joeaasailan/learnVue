@@ -1,23 +1,59 @@
 /* @flow */
 
+/**
+ * vnode基础类，vnode示例：
+ * {
+    tag: 'div'
+    data: {
+        class: 'test'
+    },
+    children: [
+        {
+            tag: 'span',
+            data: {
+                class: 'demo'
+            }
+            text: 'hello,VNode'
+        }
+    ]
+}
+ */
 export default class VNode {
+  // 当前vnode的标签名
   tag: string | void;
+  // 当前vnode各种属性集合对象
   data: VNodeData | void;
+  // 当前vnode的子节点
   children: ?Array<VNode>;
+  // 当前节点的文本
   text: string | void;
+  // 当前节点对应的真实dom节点
   elm: Node | void;
+  // 当前节点的名字空间
   ns: string | void;
+  // 编译作用域
   context: Component | void; // rendered in this component's scope
+  // 函数化组件作用域
   functionalContext: Component | void; // only for functional component root nodes
+  // 节点的key属性，被当作节点的标志，用以优化，v-for的时候特别有用
   key: string | number | void;
+  // 组件的options选项
   componentOptions: VNodeComponentOptions | void;
+  // 当前vnode对应的组件实例
   componentInstance: Component | void; // component instance
+  // 父节点
   parent: VNode | void; // component placeholder node
+  // 简而言之就是是否为原生HTML或只是普通文本，innerHTML的时候为true，textContent的时候为false
   raw: boolean; // contains raw HTML? (server only)
+  // 静态节点标志
   isStatic: boolean; // hoisted static node
+  // 是否作为跟节点插入
   isRootInsert: boolean; // necessary for enter transition check
+  // 是否为注释节点
   isComment: boolean; // empty comment placeholder?
+  // 是否为克隆节点
   isCloned: boolean; // is a cloned node?
+  // 是否有v-once指令
   isOnce: boolean; // is a v-once node?
 
   constructor (

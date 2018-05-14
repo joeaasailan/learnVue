@@ -19,7 +19,10 @@ import {
 
 export let activeInstance: any = null
 
-/*初始化生命周期*/
+/**
+ * 注册vm实例的父级组件，设置vm实例生命周期相关标志位
+ * @param {*} vm 
+ */
 export function initLifecycle (vm: Component) {
   const options = vm.$options
 
@@ -39,6 +42,7 @@ export function initLifecycle (vm: Component) {
   vm.$children = []
   vm.$refs = {}
 
+  // vm实例生命周期相关标志位
   vm._watcher = null
   vm._inactive = null
   vm._directInactive = false
@@ -47,8 +51,18 @@ export function initLifecycle (vm: Component) {
   vm._isBeingDestroyed = false
 }
 
+/**
+ * 向Vue.prototype添加 _update方法、$forceUpdate方法、$destroy方法。
+ * @param {*} Vue 
+ */
 export function lifecycleMixin (Vue: Class<Component>) {
-  /*更新节点*/
+  /**
+   * 更新节点，根据传入的新的vnode，来与旧的vnode进行对比，然后patch，
+   * 更新组件的dom结构与视图
+   * 新的vnode通常有render函数生成，或者服务端渲染生成
+   * @param {*} vnode 
+   * @param {*} hydrating 
+   */
   Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
     const vm: Component = this
     /*如果已经该组件已经挂载过了则代表进入这个步骤是个更新的过程，触发beforeUpdate钩子*/
@@ -71,7 +85,9 @@ export function lifecycleMixin (Vue: Class<Component>) {
         vm.$options._refElm
       )
     } else {
-      // updates
+      /**
+       * 重要步骤，将新的vnode与旧vnode进行对比，然后patch
+       */
       vm.$el = vm.__patch__(prevVnode, vnode)
     }
     activeInstance = prevActiveInstance
@@ -145,7 +161,13 @@ export function lifecycleMixin (Vue: Class<Component>) {
   }
 }
 
-/*挂载组件*/
+/**
+ * 挂载组件，在Vue.prototype.$mount方法中被调用
+ * 用来实现组件挂载
+ * @param {*} vm 
+ * @param {*} el 
+ * @param {*} hydrating 
+ */
 export function mountComponent (
   vm: Component,
   el: ?Element,
@@ -187,6 +209,7 @@ export function mountComponent (
       const endTag = `vue-perf-end:${id}`
 
       mark(startTag)
+      // vm._render方法在renderMixin中添加
       const vnode = vm._render()
       mark(endTag)
       measure(`${name} render`, startTag, endTag)
@@ -198,11 +221,24 @@ export function mountComponent (
     }
   } else {
     updateComponent = () => {
+      // vm._update方法在 lifecycleMixin中添加
       vm._update(vm._render(), hydrating)
     }
   }
 
-  /*这里对该vm注册一个Watcher实例，Watcher的getter为updateComponent函数，用于触发所有渲染所需要用到的数据的getter，进行依赖收集，该Watcher实例会存在所有渲染所需数据的闭包Dep中*/
+  /*这里对该vm注册一个Watcher实例，Watcher的getter为updateComponent函数，
+    用于触发所有渲染所需要用到的数据的getter，
+    进行依赖收集，该Watcher实例会存在所有渲染所需数据的闭包Dep中
+    这个_watcher用来对data对象来进行依赖收集.所以一个组件的data只用一个watcher实例来做依赖收集
+    updateComponent函数内有当前组件的render函数，包含了组件内与渲染有关的data，所以相当于以下写法：
+    new Vue({
+      render: renderFunction,
+      watch: {
+        renderFunction: handlerFunction();
+      }
+    }) 
+    相当于把整个render方法当做被watch的表达式，new Watcher的时候，就运行了一边render方法，进行了第一次依赖收集
+  */
   vm._watcher = new Watcher(vm, updateComponent, noop)
   hydrating = false
 
@@ -317,7 +353,11 @@ export function deactivateChildComponent (vm: Component, direct?: boolean) {
   }
 }
 
-/*调用钩子函数并且触发钩子事件*/
+/**
+ * 调用钩子函数并且触发钩子事件，
+ * @param {*} vm vue实例
+ * @param {*} hook 被调用的生命周期钩子
+ */
 export function callHook (vm: Component, hook: string) {
   const handlers = vm.$options[hook]
   if (handlers) {

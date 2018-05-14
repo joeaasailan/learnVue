@@ -38,10 +38,22 @@ export function proxy (target: Object, sourceKey: string, key: string) {
   sharedPropertyDefinition.set = function proxySetter (val) {
     this[sourceKey][key] = val
   }
+  // 使用defineProperty方法调用sharedPropertyDefinition参数时，sharedPropertyDefinition被深度copy了一份，
+  // 以后修改sharedPropertyDefinition对象也不会有影响。其实很好理解，defineProperty里面涉及到了native代码，
+  // sharedPropertyDefinition参数在对native代码进行了配置以后，native代码就被配置好了，修改sharedPropertyDefinition参数
+  // 不会对native代码造成重新配置
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 
-/*初始化props、methods、data、computed与watch*/
+/**
+ * 初始化props、methods、data、computed与watch
+ * 1、initProps方法，将prop设置成响应式的
+ * 2、initMethods方法，将method代理到vue实例
+ * 3、initData将data对象设置成响应式的
+ * 4、initComputed将data对象设置成响应式的
+ * 5、initWatch将watch对象设置成响应式的
+ * @param {*} vm 
+ */
 export function initState (vm: Component) {
   vm._watchers = []
   const opts = vm.$options
@@ -124,7 +136,12 @@ function initProps (vm: Component, propsOptions: Object) {
   observerState.shouldConvert = true
 }
 
-/*初始化data*/
+/**
+ * 1、设置vm的_data属性，将options里面data对象赋值到_data属性
+ * 2、将_data属性指向的data对象，代理到vm实例
+ * 3、将data对象进行observe。
+ * @param {*} vm 
+ */
 function initData (vm: Component) {
 
   /*得到data数据*/
@@ -181,7 +198,13 @@ function getData (data: Function, vm: Component): any {
 
 const computedWatcherOptions = { lazy: true }
 
-/*初始化computed*/
+/**
+ * 初始化computed
+ * 1、添加vm._computedWatchers 对象，用来保存每一个计算属性的watcher。
+ * 2、为每一个计算属性new 一个watcher，并且设置为lazy的watcher
+ * @param {*} vm 
+ * @param {*} computed opt.computed
+ */
 function initComputed (vm: Component, computed: Object) {
   const watchers = vm._computedWatchers = Object.create(null)
 
@@ -204,8 +227,9 @@ function initComputed (vm: Component, computed: Object) {
     }
     // create internal watcher for the computed property.
     /*
-      为计算属性创建一个内部的监视器Watcher，保存在vm实例的_computedWatchers中
+      为每一个计算属性创建一个内部的监视器Watcher，保存在vm实例的_computedWatchers中
       这里的computedWatcherOptions参数传递了一个lazy为true，会使得watch实例的dirty为true
+      所以为什么说计算属性时lazy的
     */
     watchers[key] = new Watcher(vm, getter, noop, computedWatcherOptions)
 
@@ -250,7 +274,7 @@ export function defineComputed (target: any, key: string, userDef: Object | Func
       ? userDef.set
       : noop
   }
-  /*defineProperty上getter与setter*/
+  /*defineProperty上getter与setter，在设置计算属性的getter和setter的同时，也将计算属性代理到vm实例*/
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 
@@ -272,7 +296,13 @@ function createComputedGetter (key) {
   }
 }
 
-/*初始化方法*/
+/**
+ * 初始化方法，主要做了两件事：
+ * 1、将所有的method上下文替换成当前vue实例，绑定this
+ * 2、将所有方法代理到vue实例
+ * @param {*} vm 
+ * @param {*} methods 
+ */
 function initMethods (vm: Component, methods: Object) {
   const props = vm.$options.props
   for (const key in methods) {
@@ -339,12 +369,22 @@ function createWatcher (vm: Component, key: string, handler: any) {
   vm.$watch(key, handler, options)
 }
 
+/**
+ * 1、向 Vue.prototype 对象添加$date代理和$props代理 vm.$date、 vm.$props
+ * 2、向 Vue.prototype 对象添加$set方法 $delete方法 vm.$delete
+ * 3、向 Vue.prototype 对象添加$watch方法 vm.$watch
+ * @param {*} Vue 
+ */
 export function stateMixin (Vue: Class<Component>) {
   // flow somehow has problems with directly declared definition object
   // when using Object.defineProperty, so we have to procedurally build up
   // the object here.
+  // 在Vue.prototype 设置$date属性 成为 vue实例的 _data 的代理。
   const dataDef = {}
-  dataDef.get = function () { return this._data }
+  dataDef.get = function () { 
+    // 这个this会指向 调用代理的vue实例。具体参见原型链方法继承中，this的指向问题。
+    return this._data 
+  }
   const propsDef = {}
   propsDef.get = function () { return this._props }
   if (process.env.NODE_ENV !== 'production') {
@@ -373,11 +413,15 @@ export function stateMixin (Vue: Class<Component>) {
   */
   Vue.prototype.$delete = del
 
-  /*
-    https://cn.vuejs.org/v2/api/#vm-watch
-    $watch方法
-    用以为对象建立观察者监视变化
-  */
+  /**
+   * https://cn.vuejs.org/v2/api/#vm-watch
+   * $watch方法
+   * 用以为对象建立观察者监视变化
+   * 注意，在这个地方调用了new Watcher方法
+   * @param {*} expOrFn 
+   * @param {*} cb 
+   * @param {*} options 
+   */
   Vue.prototype.$watch = function (
     expOrFn: string | Function,
     cb: Function,
@@ -386,6 +430,8 @@ export function stateMixin (Vue: Class<Component>) {
     const vm: Component = this
     options = options || {}
     options.user = true
+    // 这里创建出来的watcher的lazy选项是false。所以$watch创建的watcher并不是lazy的。
+    // 计算属性创建的watcher是lazy的。这是最重要的区别。
     const watcher = new Watcher(vm, expOrFn, cb, options)
     /*有immediate参数的时候会立即执行*/
     if (options.immediate) {

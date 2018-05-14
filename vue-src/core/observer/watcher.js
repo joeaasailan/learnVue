@@ -21,27 +21,40 @@ let uid = 0
  * and fires callback when the expression value changes.
  * This is used for both the $watch() api and directives.
  */
- /*
-    一个解析表达式，进行依赖收集的观察者，同时在表达式数据变更时触发回调函数。它被用于$watch api以及指令
+/**
+ *  一个解析表达式，进行依赖收集的观察者，同时在表达式数据变更时触发回调函数。
+ * 它被用于$watch api以及指令
  */
 export default class Watcher {
   vm: Component;
   expression: string;
   cb: Function;
   id: number;
+  // 是否深度watch
   deep: boolean;
+  // 是否是用户定义的watcher
   user: boolean;
+  // lazy watcher
   lazy: boolean;
   sync: boolean;
   dirty: boolean;
   active: boolean;
   deps: Array<Dep>;
   newDeps: Array<Dep>;
+  // 
   depIds: ISet;
+  // watcher内新依赖的id set集合
   newDepIds: ISet;
   getter: Function;
   value: any;
 
+  /**
+   * 
+   * @param {*} vm 当前vue实例
+   * @param {*} expOrFn 需要被watch的function 或者 express
+   * @param {*} cb 回调函数
+   * @param {*} options 选项
+   */
   constructor (
     vm: Component,
     expOrFn: string | Function,
@@ -53,6 +66,7 @@ export default class Watcher {
     vm._watchers.push(this)
     // options
     if (options) {
+      // !!可以将一些假意真假的值变为true or false，比如!!0 会变为false
       this.deep = !!options.deep
       this.user = !!options.user
       this.lazy = !!options.lazy
@@ -87,6 +101,9 @@ export default class Watcher {
         )
       }
     }
+
+    // 如果不是lazy则立即运行一次get函数，一方面进行依赖收集，一方面
+    // 立刻得出一个值
     this.value = this.lazy
       ? undefined
       : this.get()
@@ -95,13 +112,16 @@ export default class Watcher {
   /**
    * Evaluate the getter, and re-collect dependencies.
    */
-   /*获得getter的值并且重新进行依赖收集*/
+  /**
+   * 1、获得getter的值（getter其实就是被watch的表达式或者函数）
+   * 2、重新进行依赖收集
+   */
   get () {
     /*将自身watcher观察者实例设置给Dep.target，用以依赖收集。*/
     pushTarget(this)
+
     let value
     const vm = this.vm
-
     /*
       执行了getter操作，看似执行了渲染操作，其实是执行了依赖收集。
       在将Dep.target设置为自生观察者实例以后，执行getter操作。
@@ -140,9 +160,12 @@ export default class Watcher {
   addDep (dep: Dep) {
     const id = dep.id
     if (!this.newDepIds.has(id)) {
+      // watcher没有添加过这个dep，将其id添加到set中存储
       this.newDepIds.add(id)
+      // 存储这个dep实例
       this.newDeps.push(dep)
       if (!this.depIds.has(id)) {
+        // 把watcher添加到dep里面
         dep.addSub(this)
       }
     }
@@ -176,17 +199,20 @@ export default class Watcher {
    * Will be called when a dependency changes.
    */
    /*
+      在dep的notify方法中被调用。
       调度者接口，当依赖发生改变的时候进行回调。
+      注意，watcher的update方法，不是单纯的调用callback函数
    */
   update () {
     /* istanbul ignore else */
     if (this.lazy) {
+      // 如果是lazy的，则设置该watcher为dirty，然后由nextnick来处理
       this.dirty = true
     } else if (this.sync) {
       /*同步则执行run直接渲染视图*/
       this.run()
     } else {
-      /*异步推送到观察者队列中，下一个tick时调用。*/
+      /*异步推送到观察者队列中，下一个tick时调用。（重要） */
       queueWatcher(this)
     }
   }
@@ -200,7 +226,13 @@ export default class Watcher {
     */
   run () {
     if (this.active) {
-      /* get操作在获取value本身也会执行getter从而调用update更新视图 */
+      /**
+       * 重要步骤，几个重要作用：
+       * 1、被watch的表达式改变后，获取最新的value。
+       * 2、针对data对象，被watch的是vm._update和vm._render函数，在运行this.get()时，render函数跟update
+       *    函数都会重新运行一遍，达到了更新视图的目的
+       * 3、针对被watch的表达式，重新收集依赖。
+       */
       const value = this.get()
       if (
         value !== this.value ||
@@ -236,7 +268,10 @@ export default class Watcher {
    * Evaluate the value of the watcher.
    * This only gets called for lazy watchers.
    */
-   /*获取观察者的值*/
+   /**
+    * 获取观察者的值，这个方法被lazy watcher
+    * 使用，用来获取value，但是不弄脏watcher
+    */
   evaluate () {
     this.value = this.get()
     this.dirty = false

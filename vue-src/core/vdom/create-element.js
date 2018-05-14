@@ -59,11 +59,11 @@ export function _createElement (
     那么创建一个空节点
   */
   if (isDef(data) && isDef((data: any).__ob__)) {
-    process.env.NODE_ENV !== 'production' && warn(
-      `Avoid using observed data object as vnode data: ${JSON.stringify(data)}\n` +
-      'Always create fresh vnode data objects in each render!',
-      context
-    )
+    // process.env.NODE_ENV !== 'production' && warn(
+    //   `Avoid using observed data object as vnode data: ${JSON.stringify(data)}\n` +
+    //   'Always create fresh vnode data objects in each render!',
+    //   context
+    // )
     return createEmptyVNode()
   }
   /*如果tag不存在也是创建一个空节点*/

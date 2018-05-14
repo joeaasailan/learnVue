@@ -32,22 +32,27 @@ export const observerState = {
  * object's property keys into getter/setters that
  * collect dependencies and dispatches updates.
  */
- /*
-    每个被观察到对象被附加上观察者实例，一旦被添加，观察者将为目标对象加上getter\setter属性，进行依赖收集以及调度更新。
-*/
+/**
+ * 每个被观察的对象被附加上观察者实例，一旦被添加，观察者将为目标对象加上getter\setter属性，进行依赖收集以及调度更新。
+ * 每个Observer实例负责对一个被观察者(value对象)进行观察，为value对象的每一个属性设置getter\setter属性
+ */
 export class Observer {
+  // 被observer的对象
   value: any;
+  // 依赖收集对象
   dep: Dep;
   vmCount: number; // number of vms that has this object as root $data
 
   constructor (value: any) {
     this.value = value
+    // 依赖收集对象
     this.dep = new Dep()
     this.vmCount = 0
     /* 
     将Observer实例绑定到data的__ob__属性上面去，之前说过observe的时候会先检测是否已经有__ob__对象存放Observer实例了，def方法定义可以参考https://github.com/vuejs/vue/blob/dev/src/core/util/lang.js#L16 
     */
     def(value, '__ob__', this)
+
     if (Array.isArray(value)) {
       /*
           如果是数组，将修改后可以截获响应的数组方法替换掉该数组的原型中的原生方法，达到监听数组数据变化响应的效果。
@@ -125,8 +130,10 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
  */
-  /*
- 尝试创建一个Observer实例（__ob__），如果成功创建Observer实例则返回新的Observer实例，如果已有Observer实例则返回现有的Observer实例。
+/**
+ * 如果被观察的value不是一个object，则直接返回，不进行操作
+ * 尝试创建一个Observer实例（__ob__），如果成功创建Observer实例则返回新的Observer实例，
+ * 如果已有Observer实例则返回现有的Observer实例。
  */
 export function observe (value: any, asRootData: ?boolean): Observer | void {
   if (!isObject(value)) {
@@ -166,7 +173,12 @@ export function defineReactive (
   val: any,
   customSetter?: Function
 ) {
-  /*在闭包中定义一个dep对象*/
+  /**
+   * 在闭包中定义一个dep对象，为被观察者对象的每一个key都定义一个dep对象
+   * 每一个key都有一个独立的dep来存储依赖，这样可以保证修改每一个key触发的set方法中调用的都是单独的dep对象，
+   * 尽可能细粒度的去执行回调方法。
+   * 如果一个data对象所有key都用一个dep收集依赖，那么任何一个key的set方法被触发，都会导致整个组件的更新。
+   */
   const dep = new Dep()
 
   const property = Object.getOwnPropertyDescriptor(obj, key)
@@ -179,7 +191,7 @@ export function defineReactive (
   const getter = property && property.get
   const setter = property && property.set
 
-  /*对象的子对象递归进行observe并返回子节点的Observer对象*/
+  /* 对象的子对象递归进行observe并返回子节点的Observer对象，这段话确保了data对象的子对象全部都是被观察的 */
   let childOb = observe(val)
   Object.defineProperty(obj, key, {
     enumerable: true,
@@ -187,11 +199,16 @@ export function defineReactive (
     get: function reactiveGetter () {
       /*如果原本对象拥有getter方法则执行*/
       const value = getter ? getter.call(obj) : val
+      // Dep.target到底是什么时候设置的？？
       if (Dep.target) {
         /*进行依赖收集*/
         dep.depend()
         if (childOb) {
-          /*子对象进行依赖收集，其实就是将同一个watcher观察者实例放进了两个depend中，一个是正在本身闭包中的depend，另一个是子元素的depend*/
+          /**
+           * 子对象进行依赖收集，其实就是将同一个watcher观察者实例放进了两个depend中，
+           * 一个是正在本身闭包中的depend，另一个是子元素的depend
+           * why？？
+           */
           childOb.dep.depend()
         }
         if (Array.isArray(value)) {
