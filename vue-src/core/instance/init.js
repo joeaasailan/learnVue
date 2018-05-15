@@ -115,12 +115,16 @@ function initInternalComponent (vm: Component, options: InternalComponentOptions
 }
 
 /**
- * 为什么有Vue.options的存在 
+ * 功能：查询Vue构造函数是否有父类，有的话查询父类中可能存在的options对象，将其与Vue.options对象合并;
+ * 如果Vue构造函数没有父类，则直接返回Vue.options对象，Vue.options对象在initGlobalAPI方法中返回。
  * @param {Vue.constructor} Ctor 
  */
 export function resolveConstructorOptions (Ctor: Class<Component>) {
   let options = Ctor.options
-  /*如果存在父类的时候*/
+  /**
+   * 如果存在Vue的父类的时候，查询在Vue的父类中可能存在options对象，
+   * 然后与Vue.options对象合并
+   */
   if (Ctor.super) {
     /*对其父类进行resolveConstructorOptions，获取父类的options*/
     const superOptions = resolveConstructorOptions(Ctor.super)

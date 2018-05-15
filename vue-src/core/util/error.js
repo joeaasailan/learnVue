@@ -3,7 +3,13 @@
 import config from '../config'
 import { warn } from './debug'
 import { inBrowser } from './env'
-
+/**
+ * @description 处理错误函数
+ * @export
+ * @param {Error} err 
+ * @param {*} vm 
+ * @param {string} info 
+ */
 export function handleError (err: Error, vm: any, info: string) {
   if (config.errorHandler) {
     config.errorHandler.call(null, err, vm, info)

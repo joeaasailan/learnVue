@@ -7,6 +7,9 @@ import { warn, isPlainObject } from '../util/index'
 export function initAssetRegisters (Vue: GlobalAPI) {
   /**
    * Create asset registration methods.
+   * 定义Vue.component方法
+   * 定义Vue.directive方法
+   * 定义Vue.filter方法
    */
   ASSET_TYPES.forEach(type => {
     Vue[type] = function (

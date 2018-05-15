@@ -21,6 +21,13 @@ export let activeInstance: any = null
 
 /**
  * 注册vm实例的父级组件，设置vm实例生命周期相关标志位
+ * 添加vm.$parent、vm.$root、vm.$children、vm.$refs、
+ * vm._watcher = null
+ * vm._inactive = null
+ * vm._directInactive = false
+ * vm._isMounted = false
+ * vm._isDestroyed = false
+ * vm._isBeingDestroyed = false
  * @param {*} vm 
  */
 export function initLifecycle (vm: Component) {
@@ -54,6 +61,10 @@ export function initLifecycle (vm: Component) {
 /**
  * 向Vue.prototype添加 _update方法、$forceUpdate方法、$destroy方法。
  * @param {*} Vue 
+/**
+ * @description 
+ * @export
+ * @param {Class<Component>} Vue 
  */
 export function lifecycleMixin (Vue: Class<Component>) {
   /**
@@ -107,6 +118,9 @@ export function lifecycleMixin (Vue: Class<Component>) {
     // updated in a parent's updated hook.
   }
 
+  /**
+   * 立即调用vm实例的watcher对象的update方法，进行视图更新
+   */
   Vue.prototype.$forceUpdate = function () {
     const vm: Component = this
     if (vm._watcher) {
@@ -123,13 +137,13 @@ export function lifecycleMixin (Vue: Class<Component>) {
     callHook(vm, 'beforeDestroy')
     /* 标志位 */
     vm._isBeingDestroyed = true
-    // remove self from parent
+    // remove self from parent，在父组件的children数组中移除自己
     const parent = vm.$parent
     if (parent && !parent._isBeingDestroyed && !vm.$options.abstract) {
       remove(parent.$children, vm)
     }
     // teardown watchers
-    /* 该组件下的所有Watcher从其所在的Dep中释放 */
+    /* 该组件下的所有Watcher从其所在的Dep中释放，_watcher与_watchers两个属性有什么不同 */
     if (vm._watcher) {
       vm._watcher.teardown()
     }
@@ -164,8 +178,8 @@ export function lifecycleMixin (Vue: Class<Component>) {
 /**
  * 挂载组件，在Vue.prototype.$mount方法中被调用
  * 用来实现组件挂载
- * @param {*} vm 
- * @param {*} el 
+ * @param {*} vm 当前组件
+ * @param {*} el 组件挂载点dom对象
  * @param {*} hydrating 
  */
 export function mountComponent (

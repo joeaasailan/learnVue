@@ -30,7 +30,15 @@ const sharedPropertyDefinition = {
   set: noop
 }
 
-/*通过proxy函数将_data（或者_props等）上面的数据代理到vm上，这样就可以用app.text代替app._data.text了。*/
+/**
+ * @description 将 target[sourceKey][key] 代理到 target[key]上面。
+ *  通过proxy函数将_data（或者_props等）上面的数据代理到vm上，这样就可以用app.text代替app._data.text了。
+ *  vue的代理实现用的是Object.defineProperty()方法，而不是es6标准里面的Proxy类。这个很有意思
+ * @export
+ * @param {Object} target 
+ * @param {string} sourceKey 
+ * @param {string} key 
+ */
 export function proxy (target: Object, sourceKey: string, key: string) {
   sharedPropertyDefinition.get = function proxyGetter () {
     return this[sourceKey][key]
@@ -47,14 +55,16 @@ export function proxy (target: Object, sourceKey: string, key: string) {
 
 /**
  * 初始化props、methods、data、computed与watch
- * 1、initProps方法，将prop设置成响应式的
+ * 1、initProps方法，将prop设置成响应式的，在get中设置好dep依赖收集，等待new Watcher的触发进行依赖收集，在set中设置好对watcher的update通知。将prop对象代理到vm实例中
  * 2、initMethods方法，将method代理到vue实例
- * 3、initData将data对象设置成响应式的
- * 4、initComputed将data对象设置成响应式的
- * 5、initWatch将watch对象设置成响应式的
+ * 3、initData将data对象设置成响应式的，在get中设置好dep依赖收集，等待new Watcher的触发进行依赖收集，在set中设置好对watcher的update通知。将data对象代理到vm实例中
+ * 4、initComputed将computed对象设置成响应式的，并且为computed对象的每一个key设置一个watcher。将computed对象代理到vm实例中
+ * 5、initWatch将watch对象设置成响应式的，对watch对象的每一个属性调用vm.$watch方法，new一个watcher。
  * @param {*} vm 
  */
 export function initState (vm: Component) {
+  // vm._watchers用来存放一个vm实例中所有的watcher实例，包括用来watch render函数的watcher，
+  // 以及调用vm.$watch产生的watcher，options中watch与computed属性产生的watchers等等
   vm._watchers = []
   const opts = vm.$options
   /*初始化props*/
@@ -228,8 +238,7 @@ function initComputed (vm: Component, computed: Object) {
     // create internal watcher for the computed property.
     /*
       为每一个计算属性创建一个内部的监视器Watcher，保存在vm实例的_computedWatchers中
-      这里的computedWatcherOptions参数传递了一个lazy为true，会使得watch实例的dirty为true
-      所以为什么说计算属性时lazy的
+      这里的computedWatcherOptions参数传递了一个lazy为true，不会立即进行依赖收集
     */
     watchers[key] = new Watcher(vm, getter, noop, computedWatcherOptions)
 
@@ -238,7 +247,7 @@ function initComputed (vm: Component, computed: Object) {
     // at instantiation here.
     /*组件正在定义的计算属性已经定义在现有组件的原型上则不会进行重复定义*/
     if (!(key in vm)) {
-      /*定义计算属性*/
+      /*设置计算属性为响应式的*/
       defineComputed(vm, key, userDef)
     } else if (process.env.NODE_ENV !== 'production') {
       /*如果计算属性与已定义的data或者props中的名称冲突则发出warning*/
@@ -251,7 +260,13 @@ function initComputed (vm: Component, computed: Object) {
   }
 }
 
-/*定义计算属性*/
+/**
+ * @description 定义计算属性
+ * @export
+ * @param {*} target 主体对象
+ * @param {string} key 响应式属性
+ * @param {(Object | Function)} userDef 用户自定义getter or setter 
+ */
 export function defineComputed (target: any, key: string, userDef: Object | Function) {
   if (typeof userDef === 'function') {
     /*创建计算属性的getter*/

@@ -28,7 +28,7 @@ import { resolveSlots, resolveScopedSlots } from './render-helpers/resolve-slots
 
 /**
  * 初始化render
- * 设置了 _vnode属性、$slots属性、$scopedSlots属性、$createElement方法
+ * 设置了 _vnode属性、$slots属性、$scopedSlots属性、vm.$createElement方法
  * @param {*} vm 
  */
 export function initRender (vm: Component) {
@@ -55,11 +55,19 @@ export function initRender (vm: Component) {
  * @param {*} Vue 
  */
 export function renderMixin (Vue: Class<Component>) {
+
+  /**
+   * 功能：向vue框架的nextTick时间添加一个回调函数
+   * @param {*} fn 
+   */
   Vue.prototype.$nextTick = function (fn: Function) {
     return nextTick(fn, this)
   }
 
-  /*_render渲染函数，返回一个VNode节点*/
+  /**
+   * _render渲染函数，返回一个VNode节点
+   * 获取options中的render函数，运行render函数，获取vnode节点
+   */
   Vue.prototype._render = function (): VNode {
     const vm: Component = this
     const {

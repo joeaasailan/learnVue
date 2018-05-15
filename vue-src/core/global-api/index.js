@@ -17,6 +17,11 @@ import {
   defineReactive
 } from '../util/index'
 
+/**
+ * @description 向Vue中添加一些全局api接口
+ * @export
+ * @param {GlobalAPI} Vue 
+ */
 export function initGlobalAPI (Vue: GlobalAPI) {
   // config
   const configDef = {}
@@ -44,6 +49,15 @@ export function initGlobalAPI (Vue: GlobalAPI) {
   Vue.delete = del
   Vue.nextTick = nextTick
 
+  /**
+   * 添加Vue.options = {
+   *  component: Object.create(null),
+   *  directive: Object.create(null),
+   *  filter: Object.create(null)
+   * }
+   * 在new Vue(options)的时候，会自动将Vue.options与options合并，这样可以确保合并出来的options.component、
+   * options.directive、options.filter都是有值的。
+   */
   Vue.options = Object.create(null)
   ASSET_TYPES.forEach(type => {
     Vue.options[type + 's'] = Object.create(null)
@@ -55,9 +69,12 @@ export function initGlobalAPI (Vue: GlobalAPI) {
   Vue.options._base = Vue
 
   extend(Vue.options.components, builtInComponents)
-
+  // 定义Vue.use方法。通常用来安装插件
   initUse(Vue)
+  // 定义Vue.mixin方法。
   initMixin(Vue)
+  // 定义Vue.extend方法
   initExtend(Vue)
+  // 定义Vue.component方法、定义Vue.directive方法、定义Vue.filter方法
   initAssetRegisters(Vue)
 }

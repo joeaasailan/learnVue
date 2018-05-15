@@ -49,7 +49,60 @@ export default class Watcher {
   value: any;
 
   /**
+   * 以new Vue({
+   *    data: {
+   *      count: 0
+   *    },
+   *    computed: {
+   *      maxCount: function() {
+   *         return this.count + 10;
+   *      }
+   *    },
+   *    watch: {
+   *      count: {
+   *         handler: function(newVal, oldVal) {
+   *            ....
+   *         },
+   *         deep: true
+   *      }
+   *    }
+   * })
+   * 为例
+   * new watcher的各个参数如下
+   * 1、计算属性computed: 针对computed对象的每一个key，new一个watcher。调用时各个参数如下：
+   *    vm: 当前vue实例
+   *    expOrFn: computed.maxCount 函数。
+   *    cb: noop（一个自定义的空函数）
+   *    options: {
+   *      lazy: true,
+   *      deep: false,
+   *      sync: false,
+   *      user: false
+   *      ...
+   *    }
+   *    
+   * 2、使用vm.$watch方法，或者options.watch属性对象创建。其最终的options一般如下：
+   *   vm: 当前vue实例
+   *   expOrFn: 'count'
+   *   cb: watch.count 函数
+   *   options: {
+   *      lazy: true,
+   *      deep: true, // true or false 由用户传入决定
+   *      sync: false,
+   *      user: true,
+   *      ...
+   *   }
    * 
+   * 3、检测render函数的实例：options如下：
+   *   vm: 当前vue实例
+   *   expOrFn: () => vm._update(vm._render(), hydrating) // hydrating应该是false，意义不明
+   *   cb: noop 
+   *   options: {
+   *      lazy: false,
+   *      deep: false,
+   *      sync: false,
+   *      user: false
+   *   }
    * @param {*} vm 当前vue实例
    * @param {*} expOrFn 需要被watch的function 或者 express
    * @param {*} cb 回调函数
@@ -78,10 +131,12 @@ export default class Watcher {
     this.id = ++uid // uid for batching
     this.active = true
     this.dirty = this.lazy // for lazy watchers
+
     this.deps = []
     this.newDeps = []
     this.depIds = new Set()
     this.newDepIds = new Set()
+    
     this.expression = process.env.NODE_ENV !== 'production'
       ? expOrFn.toString()
       : ''
@@ -102,17 +157,18 @@ export default class Watcher {
       }
     }
 
-    // 如果不是lazy则立即运行一次get函数，一方面进行依赖收集，一方面
-    // 立刻得出一个值
-    this.value = this.lazy
-      ? undefined
-      : this.get()
+    /**
+     * 检测render函数的watcher，其lazy为false，可以在new watcher时立即运行一次this.get()方法，进行第一次依赖收集
+     * 其余情况lazy都是true，不会在new watcher时进行依赖收集
+     */
+    this.value = this.lazy ? undefined : this.get()
   }
 
   /**
    * Evaluate the getter, and re-collect dependencies.
    */
   /**
+   * 0、被调用的时机： 构造函数、this.run()方法、this.evaluate()方法。
    * 1、获得getter的值（getter其实就是被watch的表达式或者函数）
    * 2、重新进行依赖收集
    */
@@ -131,6 +187,7 @@ export default class Watcher {
       将该观察者对象放入闭包中的Dep的subs中去。
     */
     if (this.user) {
+      // 如果是用户自定义的getter函数，可能会throw error 
       try {
         value = this.getter.call(vm, vm)
       } catch (e) {
@@ -174,7 +231,13 @@ export default class Watcher {
   /**
    * Clean up for dependency collection.
    */
-   /*清理依赖收集*/
+  /**
+   * @description 清理依赖收集。
+   * 0、把this.deps中不包含在this.newDepIds中的dep实例清理掉
+   * 1、把this.newDepIds 保存到 this.depIds，然后把this.newDepIds 设置成一个空set
+   * 2、把this.newDeps 保存到 this.deps，然后把this.newDeps 设置成一个空array
+   * @memberof Watcher
+   */
   cleanupDeps () {
     /*移除所有观察者对象*/
     let i = this.deps.length
@@ -184,10 +247,12 @@ export default class Watcher {
         dep.removeSub(this)
       }
     }
+
     let tmp = this.depIds
     this.depIds = this.newDepIds
     this.newDepIds = tmp
     this.newDepIds.clear()
+
     tmp = this.deps
     this.deps = this.newDeps
     this.newDeps = tmp

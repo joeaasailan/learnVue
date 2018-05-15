@@ -76,8 +76,10 @@ export class Observer {
    * getter/setters. This method should only be called when
    * value type is Object.
    */
-   /*
-      遍历每一个对象并且在它们上面绑定getter与setter。这个方法只有在value的类型是对象的时候才能被调用
+  /**
+   * @description 遍历每一个对象并且在它们上面绑定getter与setter。这个方法只有在value的类型是对象的时候才能被调用
+   * @param {Object} obj 
+   * @memberof Observer
    */
   walk (obj: Object) {
     const keys = Object.keys(obj)
@@ -131,9 +133,14 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * or the existing observer if the value already has one.
  */
 /**
+ * @description 
  * 如果被观察的value不是一个object，则直接返回，不进行操作
  * 尝试创建一个Observer实例（__ob__），如果成功创建Observer实例则返回新的Observer实例，
  * 如果已有Observer实例则返回现有的Observer实例。
+ * @export
+ * @param {*} value 被观察的对象
+ * @param {?boolean} asRootData 是否作为root数据
+ * @returns {(Observer | void)} 观察该数据的ob对象
  */
 export function observe (value: any, asRootData: ?boolean): Observer | void {
   if (!isObject(value)) {
@@ -166,7 +173,14 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
 /**
  * Define a reactive property on an Object.
  */
- /*为对象defineProperty上在变化时通知的属性*/
+/**
+ * @description 将obj的key属性定义getter与setter，getter里面设置了依赖收集的代码，setter里面设置了通知watcher更新的代码.
+ * @export
+ * @param {Object} obj 主体对象
+ * @param {string} key 被定义成响应式的key属性
+ * @param {*} val obj[key]对应的原值
+ * @param {Function} [customSetter] 自定义setter。
+ */
 export function defineReactive (
   obj: Object,
   key: string,
