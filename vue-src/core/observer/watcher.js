@@ -267,17 +267,21 @@ export default class Watcher {
       在dep的notify方法中被调用。
       调度者接口，当依赖发生改变的时候进行回调。
       注意，watcher的update方法，不是单纯的调用callback函数
+      1、计算属性computed lazy: true, sync: false
+      2、vm.$watch lazy： true, sync: false
+      3、vm._watcher lazy: false, sync: false
    */
   update () {
     /* istanbul ignore else */
     if (this.lazy) {
-      // 如果是lazy的，则设置该watcher为dirty，然后由nextnick来处理
+      // 计算属性与vm.$watch 的watcher实例为什么只设置了dirty就不动了
       this.dirty = true
     } else if (this.sync) {
       /*同步则执行run直接渲染视图*/
       this.run()
     } else {
       /*异步推送到观察者队列中，下一个tick时调用。（重要） */
+      // 为什么只有vm._watcher update时会调用这个方法。
       queueWatcher(this)
     }
   }

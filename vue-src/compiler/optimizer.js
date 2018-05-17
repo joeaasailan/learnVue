@@ -122,7 +122,12 @@ function walkThroughConditionsBlocks (conditionBlocks: ASTIfConditions, isInFor:
   }
 }
 
-/*判断一个node节点是否是static的*/
+/**
+ * @description 判断一个node节点是否是static的
+ *  文本节点是静态节点。
+ * @param {ASTNode} node 
+ * @returns {boolean} 
+ */
 function isStatic (node: ASTNode): boolean {
   if (node.type === 2) { // expression
     return false
@@ -133,13 +138,18 @@ function isStatic (node: ASTNode): boolean {
   return !!(node.pre || (
     !node.hasBindings && // no dynamic bindings
     !node.if && !node.for && // not v-if or v-for or v-else
-    !isBuiltInTag(node.tag) && // not a built-in
+    !isBuiltInTag(node.tag) && // not a built-in(所谓的built-in 指 slot,component这两个标签)
     isPlatformReservedTag(node.tag) && // not a component
-    !isDirectChildOfTemplateFor(node) &&
+    !isDirectChildOfTemplateFor(node) && // 父元素不是template
     Object.keys(node).every(isStaticKey)
   ))
 }
 
+/**
+ * @description 当前node的父元素是否为template
+ * @param {ASTElement} node 
+ * @returns {boolean} 不是template，返回false，是template返回true
+ */
 function isDirectChildOfTemplateFor (node: ASTElement): boolean {
   while (node.parent) {
     node = node.parent
@@ -147,6 +157,7 @@ function isDirectChildOfTemplateFor (node: ASTElement): boolean {
       return false
     }
     if (node.for) {
+      // 这是什么意思？？
       return true
     }
   }

@@ -170,6 +170,7 @@ export function queueWatcher (watcher: Watcher) {
     } else {
       // if already flushing, splice the watcher based on its id
       // if already past its id, it will be run next immediately.
+      // 下面这段循环什么意思，queue里面的watcher实例有按照id大小进行排序吗？？
       let i = queue.length - 1
       while (i >= 0 && queue[i].id > watcher.id) {
         i--
@@ -179,6 +180,7 @@ export function queueWatcher (watcher: Watcher) {
     // queue the flush
     if (!waiting) {
       waiting = true
+      // 在这里触发nextTick方法运行
       nextTick(flushSchedulerQueue)
     }
   }

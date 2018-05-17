@@ -2,22 +2,34 @@
 
 /**
  * vnode基础类，vnode示例：
- * {
-    tag: 'div'
-    data: {
-        class: 'test'
-    },
-    children: [
-        {
-            tag: 'span',
-            data: {
-                class: 'demo'
-            }
-            text: 'hello,VNode'
-        }
-    ]
-}
  */
+// {
+//   tag: 'span',
+//   data: {
+//       /* 指令集合数组 */
+//       directives: [
+//           {
+//               /* v-show指令 */
+//               rawName: 'v-show',
+//               expression: 'isShow',
+//               name: 'show',
+//               value: true
+//           }
+//       ],
+//       /* 静态class */
+//       staticClass: 'demo'
+//   },
+//   text: undefined,
+//   children: [
+//       /* 子节点是一个文本VNode节点 */
+//       {
+//           tag: undefined,
+//           data: undefined,
+//           text: 'This is a span.',
+//           children: undefined
+//       }
+//   ]
+// }
 export default class VNode {
   // 当前vnode的标签名
   tag: string | void;
@@ -45,7 +57,7 @@ export default class VNode {
   parent: VNode | void; // component placeholder node
   // 简而言之就是是否为原生HTML或只是普通文本，innerHTML的时候为true，textContent的时候为false
   raw: boolean; // contains raw HTML? (server only)
-  // 静态节点标志
+  // 静态节点标志，一个节点如果不包含任何的表达式或者指令（即不会动态变化），判断为静态节点
   isStatic: boolean; // hoisted static node
   // 是否作为跟节点插入
   isRootInsert: boolean; // necessary for enter transition check

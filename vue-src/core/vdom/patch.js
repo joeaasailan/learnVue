@@ -78,13 +78,17 @@ function createKeyToOldIdx (children, beginIdx, endIdx) {
   return map
 }
 
-/*创建patch方法*/
+/**
+ * 创建patch方法
+ * @param {*} backend 
+ */
 export function createPatchFunction (backend) {
   let i, j
   const cbs = {}
 
   /*
-    nodeOps  见platforms/web(weex)/runtime/node-ops.js  实际上是操作节点（分平台，比如web上是Dom节点的操作）的方法集合的一个适配层，保证不同平台使用同样的对外接口操作节点。
+    nodeOps  见platforms/web(weex)/runtime/node-ops.js  实际上是操作节点（分平台，比如web上是Dom节点的操作）的方法集合的一个适配层，
+      保证不同平台使用同样的对外接口操作节点。
     modules  见/platforms/web(weex)/runtime/modules
   */
   const { modules, nodeOps } = backend
@@ -113,7 +117,10 @@ export function createPatchFunction (backend) {
     return remove
   }
 
-  /*将某个el节点从文档中移除*/
+  /**
+   * @description 将某个el节点从文档中移除
+   * @param {Element} el 
+   */
   function removeNode (el) {
     const parent = nodeOps.parentNode(el)
     // element may have already been removed due to v-html / v-text
@@ -123,19 +130,27 @@ export function createPatchFunction (backend) {
   }
 
   let inPre = 0
-  /*创建一个节点*/
+  /**
+   * @description 根据传入的vnode创建 element
+   * @param {any} vnode 传入的vnode
+   * @param {any} insertedVnodeQueue 
+   * @param {any} parentElm vnode的父 element 元素
+   * @param {any} refElm vnode当前引用的element元素
+   * @param {boolean} nested 
+   */
   function createElm (vnode, insertedVnodeQueue, parentElm, refElm, nested) {
     /*insertedVnodeQueue为空数组[]的时候isRootInsert标志为true*/
     vnode.isRootInsert = !nested // for transition enter check
-    /*创建一个组件节点*/
+    /* 尝试创建一个组件节点*/
     if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
       return
     }
-
+    // 创建普通element对象
     const data = vnode.data
     const children = vnode.children
     const tag = vnode.tag
     if (isDef(tag)) {
+      // html节点
       if (process.env.NODE_ENV !== 'production') {
         if (data && data.pre) {
           inPre++
@@ -154,6 +169,7 @@ export function createPatchFunction (backend) {
           )
         }
       }
+      // 创建vnode代表的element元素，其children还未创建
       vnode.elm = vnode.ns
         ? nodeOps.createElementNS(vnode.ns, tag)
         : nodeOps.createElement(tag, vnode)
@@ -179,10 +195,13 @@ export function createPatchFunction (backend) {
           insert(parentElm, vnode.elm, refElm)
         }
       } else {
+        // 创建children element
         createChildren(vnode, children, insertedVnodeQueue)
         if (isDef(data)) {
+          // ????
           invokeCreateHooks(vnode, insertedVnodeQueue)
         }
+        // 将当前vnode的element对象插入到 parentelement中
         insert(parentElm, vnode.elm, refElm)
       }
 
@@ -190,15 +209,24 @@ export function createPatchFunction (backend) {
         inPre--
       }
     } else if (isTrue(vnode.isComment)) {
+      // html注释节点
       vnode.elm = nodeOps.createComment(vnode.text)
       insert(parentElm, vnode.elm, refElm)
     } else {
+      // 文本节点
       vnode.elm = nodeOps.createTextNode(vnode.text)
       insert(parentElm, vnode.elm, refElm)
     }
   }
 
-  /*创建一个组件*/
+  /**
+   * @description 创建一个组件节点
+   * @param {any} vnode 
+   * @param {any} insertedVnodeQueue 
+   * @param {any} parentElm 
+   * @param {any} refElm 
+   * @returns 
+   */
   function createComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
     let i = vnode.data
     if (isDef(i)) {
@@ -270,10 +298,17 @@ export function createPatchFunction (backend) {
     insert(parentElm, vnode.elm, refElm)
   }
 
+  /**
+   * @description 将element元素插入到parent
+   * @param {any} parent 要被插入的父元素
+   * @param {any} elm 要被插入的element元素
+   * @param {any} ref 如果指定了ref则elm被插入到ref元素之前
+   */
   function insert (parent, elm, ref) {
     if (isDef(parent)) {
       if (isDef(ref)) {
         if (ref.parentNode === parent) {
+          // ???
           nodeOps.insertBefore(parent, elm, ref)
         }
       } else {
@@ -282,6 +317,12 @@ export function createPatchFunction (backend) {
     }
   }
 
+  /**
+   * @description 创建一个vnode节点的children节点
+   * @param {any} vnode 当前vnode节点
+   * @param {any} children vnode.children
+   * @param {any} insertedVnodeQueue 
+   */
   function createChildren (vnode, children, insertedVnodeQueue) {
     if (Array.isArray(children)) {
       for (let i = 0; i < children.length; ++i) {
@@ -334,7 +375,15 @@ export function createPatchFunction (backend) {
     }
   }
 
-  /*添加节点*/
+  /**
+   * @description 批量调用 createElm 新建节点 
+   * @param {any} parentElm 父element元素
+   * @param {any} refElm 
+   * @param {any} vnodes 需要创建vnode节点
+   * @param {any} startIdx vnodes的开始索引
+   * @param {any} endIdx vnodes的结束索引
+   * @param {any} insertedVnodeQueue 
+   */
   function addVnodes (parentElm, refElm, vnodes, startIdx, endIdx, insertedVnodeQueue) {
     for (; startIdx <= endIdx; ++startIdx) {
       createElm(vnodes[startIdx], insertedVnodeQueue, parentElm, refElm)
@@ -358,7 +407,13 @@ export function createPatchFunction (backend) {
     }
   }
 
-  /*移除节点*/
+  /**
+   * @description 批量移除移除节点
+   * @param {any} parentElm 父元素
+   * @param {any} vnodes 需要移除的vnodes数组
+   * @param {any} startIdx 移除开始下标
+   * @param {any} endIdx 移除结束下标
+   */
   function removeVnodes (parentElm, vnodes, startIdx, endIdx) {
     for (; startIdx <= endIdx; ++startIdx) {
       const ch = vnodes[startIdx]
@@ -511,6 +566,7 @@ export function createPatchFunction (backend) {
       如果新旧VNode都是静态的，同时它们的key相同（代表同一节点），
       并且新的VNode是clone或者是标记了once（标记v-once属性，只渲染一次），
       那么只需要替换elm以及componentInstance即可。
+      为什么可以这样子，如果静态节点的children 是动态的呢，如果被改变了怎么办？？
     */
     if (isTrue(vnode.isStatic) &&
         isTrue(oldVnode.isStatic) &&

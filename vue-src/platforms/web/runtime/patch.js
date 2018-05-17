@@ -9,4 +9,5 @@ import platformModules from 'web/runtime/modules/index'
 // built-in modules have been applied.
 const modules = platformModules.concat(baseModules)
 
+// 这个参数是什么东西？？
 export const patch: Function = createPatchFunction({ nodeOps, modules })
